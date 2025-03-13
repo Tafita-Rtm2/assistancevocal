@@ -1,6 +1,5 @@
 const express = require("express");
 const cors = require("cors");
-const say = require("say");
 const fetch = require("node-fetch");
 
 const app = express();
@@ -17,9 +16,6 @@ app.post("/ask", async (req, res) => {
         const response = await fetch(`http://sgp1.hmvhostings.com:25721/gemini?question=${encodeURIComponent(question)}`);
         const data = await response.json();
         const reply = data.answer || "Je ne sais pas quoi dire.";
-
-        // Lire la réponse en vocal
-        say.speak(reply);
 
         res.json({ answer: reply });
     } catch (error) {
