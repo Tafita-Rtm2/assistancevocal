@@ -1,8 +1,8 @@
-const startVoiceBtn = document.getElementById("startVoice");
 const typingIndicator = document.querySelector(".typing-indicator");
+const chatContainer = document.getElementById("chatContainer");
+const chatBox = document.getElementById("chatBox");
 const textInput = document.getElementById("textInput");
 const sendTextBtn = document.getElementById("sendText");
-const chatBox = document.querySelector(".chat-box");
 const toggleChatBtn = document.getElementById("toggleChat");
 
 const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
@@ -14,6 +14,10 @@ function speakText(text) {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "fr-FR";
     speechSynthesis.speak(utterance);
+
+    utterance.onend = () => {
+        recognition.start();
+    };
 }
 
 function askBot(question) {
@@ -28,6 +32,8 @@ function askBot(question) {
     .then(data => {
         typingIndicator.style.display = "none";
         speakText(data.answer);
+        addMessage("Moi", question);
+        addMessage("Bot", data.answer);
         saveChat("Moi", question);
         saveChat("Bot", data.answer);
     })
@@ -37,18 +43,19 @@ function askBot(question) {
     });
 }
 
-startVoiceBtn.addEventListener("click", () => {
-    recognition.start();
-});
+function addMessage(author, message) {
+    const messageElement = document.createElement("p");
+    messageElement.textContent = `${author}: ${message}`;
+    chatBox.appendChild(messageElement);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
 
 recognition.onresult = (event) => {
     let question = event.results[0][0].transcript;
     askBot(question);
 };
 
-recognition.onend = () => {
-    typingIndicator.style.display = "none";
-};
+recognition.start();
 
 sendTextBtn.addEventListener("click", () => {
     let question = textInput.value.trim();
@@ -59,18 +66,5 @@ sendTextBtn.addEventListener("click", () => {
 });
 
 toggleChatBtn.addEventListener("click", () => {
-    chatBox.style.display = chatBox.style.display === "none" ? "block" : "none";
+    chatContainer.style.display = chatContainer.style.display === "none" ? "block" : "none";
 });
-
-function saveChat(author, message) {
-    let chatHistory = JSON.parse(localStorage.getItem("chatHistory")) || [];
-    chatHistory.push({ author, message });
-    localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
-}
-
-window.onload = () => {
-    let chatHistory = JSON.parse(localStorage.getItem("chatHistory")) || [];
-    chatHistory.forEach(chat => {
-        console.log(`${chat.author}: ${chat.message}`);
-    });
-};
