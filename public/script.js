@@ -25,8 +25,13 @@ async function getBotResponse(question) {
     });
     let data = await response.json();
     document.getElementById("typing-indicator").style.display = "none";
-    addMessage("Bot", data.answer);
-    speakText(data.answer);
+    
+    if (data.answer) {
+        addMessage("Bot", data.answer);
+        speakText(data.answer);
+    } else {
+        addMessage("Bot", "Désolé, je n'ai pas compris.");
+    }
 }
 
 function addMessage(sender, text) {
