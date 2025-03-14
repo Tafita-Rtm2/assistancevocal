@@ -15,7 +15,10 @@ app.post("/ask", async (req, res) => {
 
     try {
         const response = await axios.get(`${API_URL}?prompt=${encodeURIComponent(message)}&uid=1`);
-        const reply = response.data.description || "Je n'ai pas compris.";
+        let reply = response.data.description || "Je n'ai pas compris.";
+
+        // Suppression des astérisques et mise en gras du texte encadré par ** **
+        reply = reply.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>").replace(/\*/g, "");
 
         res.json({ response: reply });
     } catch (error) {
