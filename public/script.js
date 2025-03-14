@@ -14,8 +14,7 @@ if ("webkitSpeechRecognition" in window) {
     recognition.continuous = false;
     recognition.interimResults = false;
     recognition.lang = navigator.language || "fr-FR";
-    recognition.maxAlternatives = 1; // Réduction des bruits parasites
-    recognition.noiseSuppression = true; // Tentative de suppression du bruit (certains navigateurs)
+    recognition.maxAlternatives = 1;
 
     let silenceTimeout;
 
@@ -33,7 +32,7 @@ if ("webkitSpeechRecognition" in window) {
         const transcript = event.results[0][0].transcript;
         addMessage("Vous", transcript);
 
-        disableMic(); // Désactiver le micro pendant la réponse du bot
+        disableMic(); // Désactiver le micro pour éviter que le bot ne se réponde à lui-même
 
         const response = await fetch("/ask", {
             method: "POST",
@@ -48,7 +47,7 @@ if ("webkitSpeechRecognition" in window) {
     };
 
     recognition.onerror = (event) => {
-        console.error("Erreur reconnaissance vocale:", event.error);
+        console.error("Erreur:", event.error);
     };
 
     recognition.onspeechend = () => {
@@ -59,7 +58,7 @@ if ("webkitSpeechRecognition" in window) {
 
     recognition.onend = () => {
         if (isListening && !isBotSpeaking) {
-            setTimeout(() => recognition.start(), 1000);
+            setTimeout(() => recognition.start(), 100); // Démarrage ultra rapide
         } else {
             controlBtn.textContent = "🎤 Démarrer";
         }
