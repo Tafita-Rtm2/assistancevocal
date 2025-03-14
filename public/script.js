@@ -1,73 +1,104 @@
-document.addEventListener("DOMContentLoaded", () => {
-    const chatBox = document.getElementById("chat-box");
-    const userInput = document.getElementById("user-input");
-    const sendBtn = document.getElementById("send-btn");
-    const typingIndicator = document.getElementById("typing-indicator");
+const startBtn = document.getElementById("startBtn");
+const typingIndicator = document.getElementById("typingIndicator");
+const toggleChat = document.getElementById("toggleChat");
+const chatBox = document.getElementById("chatBox");
+const chatMessages = document.getElementById("chatMessages");
+const chatInput = document.getElementById("chatInput");
 
-    // Fonction pour ajouter un message dans le chat
-    function addMessage(text, sender) {
-        const msgDiv = document.createElement("div");
-        msgDiv.classList.add("message", sender);
-        msgDiv.textContent = text;
-        chatBox.appendChild(msgDiv);
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    // Fonction pour envoyer une requête à l'API
-    async function sendMessage(message) {
-        addMessage(`Moi: ${message}`, "user");
-        typingIndicator.style.display = "block";
-
-        try {
-            const response = await fetch("/ask", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message })
-            });
-            const data = await response.json();
-            typingIndicator.style.display = "none";
-            addMessage(`Bot: ${data.reply}`, "bot");
-            speakText(data.reply);
-        } catch (error) {
-            typingIndicator.style.display = "none";
-            addMessage("Erreur de connexion avec le serveur.", "bot");
-        }
-    }
-
-    // Reconnaissance vocale automatique
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    recognition.lang = "fr-FR";
-    recognition.continuous = true;
+let recognition;
+if ("webkitSpeechRecognition" in window) {
+    recognition = new webkitSpeechRecognition();
+    recognition.continuous = false;
     recognition.interimResults = false;
+    recognition.lang = navigator.language || "fr-FR"; // Détection automatique de la langue
+    let silenceTimeout;
 
-    recognition.onresult = (event) => {
-        const lastResult = event.results[event.results.length - 1];
-        const message = lastResult[0].transcript.trim();
-        userInput.value = message;
-        sendMessage(message);
+    recognition.onstart = () => {
+        typingIndicator.style.display = "block";
+        clearTimeout(silenceTimeout);
     };
 
-    recognition.start();
+    recognition.onresult = async (event) => {
+        typingIndicator.style.display = "none";
+        const transcript = event.results[0][0].transcript;
+        addMessage("Vous", transcript);
+        
+        fetch("/ask", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: transcript }),
+        })
+        .then(res => res.json())
+        .then(data => {
+            addMessage("Bot", data.response);
+            speak(data.response, recognition.lang);
+        });
+    };
 
-    // Fonction pour lire la réponse du bot
-    function speakText(text) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = "fr-FR";
-        speechSynthesis.speak(utterance);
-    }
+    recognition.onerror = (event) => {
+        console.error("Erreur reconnaissance vocale:", event.error);
+    };
 
-    // Envoyer un message quand on appuie sur "Entrée"
-    userInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") {
-            sendMessage(userInput.value);
-            userInput.value = "";
-        }
+    recognition.onspeechend = () => {
+        silenceTimeout = setTimeout(() => {
+            recognition.stop();  // Arrête après 3 secondes de silence
+        }, 3000);
+    };
+
+    recognition.onend = () => {
+        setTimeout(() => recognition.start(), 1000);
+    };
+
+    startBtn.addEventListener("click", () => {
+        recognition.start();
     });
+}
 
-    // Envoyer un message avec le bouton
-    sendBtn.addEventListener("click", () => {
-        sendMessage(userInput.value);
-        userInput.value = "";
-    });
+toggleChat.addEventListener("click", () => {
+    chatBox.style.display = chatBox.style.display === "none" ? "block" : "none";
 });
+
+function sendMessage() {
+    const message = chatInput.value.trim();
+    if (message === "") return;
+
+    addMessage("Vous", message);
+    chatInput.value = "";
+
+    fetch("/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+    })
+    .then(res => res.json())
+    .then(data => {
+        addMessage("Bot", data.response);
+        speak(data.response, navigator.language);
+    });
+}
+
+function addMessage(sender, message) {
+    const messageElement = document.createElement("p");
+    messageElement.innerHTML = `<strong>${sender}:</strong> ${message}`;
+    chatMessages.appendChild(messageElement);
+    saveChat();
+}
+
+function speak(text, lang) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = lang;
+    speechSynthesis.speak(utterance);
+}
+
+function saveChat() {
+    localStorage.setItem("chatHistory", chatMessages.innerHTML);
+}
+
+function loadChat() {
+    const savedChat = localStorage.getItem("chatHistory");
+    if (savedChat) {
+        chatMessages.innerHTML = savedChat;
+    }
+}
+
+loadChat();
