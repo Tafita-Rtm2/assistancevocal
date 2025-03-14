@@ -1,70 +1,73 @@
-function addMessage(sender, message, isUser = false) {
-    const chat = document.getElementById("chat");
-    const msgDiv = document.createElement("div");
-    msgDiv.classList.add(isUser ? "user-message" : "bot-message");
-    msgDiv.innerText = sender + ": " + message;
-    chat.appendChild(msgDiv);
-    chat.scrollTop = chat.scrollHeight;
-}
+document.addEventListener("DOMContentLoaded", () => {
+    const chatBox = document.getElementById("chat-box");
+    const userInput = document.getElementById("user-input");
+    const sendBtn = document.getElementById("send-btn");
+    const typingIndicator = document.getElementById("typing-indicator");
 
-async function sendMessage() {
-    let input = document.getElementById("user-input");
-    let question = input.value.trim();
-    if (!question) return;
-
-    addMessage("Moi", question, true);
-    input.value = "";
-
-    document.getElementById("typing-indicator").style.display = "block";
-
-    try {
-        let response = await fetch("/ask", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ question })
-        });
-
-        let data = await response.json();
-        console.log("🟢 Réponse reçue:", data);
-
-        document.getElementById("typing-indicator").style.display = "none";
-
-        if (data.answer) {
-            addMessage("Bot", data.answer);
-            speakText(data.answer);
-        } else {
-            addMessage("Bot", "Je n'ai pas de réponse.");
-        }
-    } catch (error) {
-        console.error("❌ Erreur:", error);
-        addMessage("Bot", "Erreur de connexion.");
+    // Fonction pour ajouter un message dans le chat
+    function addMessage(text, sender) {
+        const msgDiv = document.createElement("div");
+        msgDiv.classList.add("message", sender);
+        msgDiv.textContent = text;
+        chatBox.appendChild(msgDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
     }
-}
 
-function handleKeyPress(event) {
-    if (event.key === "Enter") sendMessage();
-}
+    // Fonction pour envoyer une requête à l'API
+    async function sendMessage(message) {
+        addMessage(`Moi: ${message}`, "user");
+        typingIndicator.style.display = "block";
 
-// 🎤 Fonction pour lire la réponse en vocal
-function speakText(text) {
-    const utterance = new SpeechSynthesisUtterance(text);
-    
-    // Détection automatique de la langue
-    const detectedLang = detectLanguage(text);
-    utterance.lang = detectedLang;
-    
-    speechSynthesis.speak(utterance);
-}
+        try {
+            const response = await fetch("/ask", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message })
+            });
+            const data = await response.json();
+            typingIndicator.style.display = "none";
+            addMessage(`Bot: ${data.reply}`, "bot");
+            speakText(data.reply);
+        } catch (error) {
+            typingIndicator.style.display = "none";
+            addMessage("Erreur de connexion avec le serveur.", "bot");
+        }
+    }
 
-// 🌎 Détection automatique de la langue
-function detectLanguage(text) {
-    const frenchWords = ["bonjour", "salut", "merci"];
-    const englishWords = ["hello", "thank", "yes"];
-    const spanishWords = ["hola", "gracias", "sí"];
+    // Reconnaissance vocale automatique
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = "fr-FR";
+    recognition.continuous = true;
+    recognition.interimResults = false;
 
-    if (frenchWords.some(word => text.toLowerCase().includes(word))) return "fr-FR";
-    if (englishWords.some(word => text.toLowerCase().includes(word))) return "en-US";
-    if (spanishWords.some(word => text.toLowerCase().includes(word))) return "es-ES";
-    
-    return "fr-FR"; // Par défaut, en français
-}
+    recognition.onresult = (event) => {
+        const lastResult = event.results[event.results.length - 1];
+        const message = lastResult[0].transcript.trim();
+        userInput.value = message;
+        sendMessage(message);
+    };
+
+    recognition.start();
+
+    // Fonction pour lire la réponse du bot
+    function speakText(text) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "fr-FR";
+        speechSynthesis.speak(utterance);
+    }
+
+    // Envoyer un message quand on appuie sur "Entrée"
+    userInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+            sendMessage(userInput.value);
+            userInput.value = "";
+        }
+    });
+
+    // Envoyer un message avec le bouton
+    sendBtn.addEventListener("click", () => {
+        sendMessage(userInput.value);
+        userInput.value = "";
+    });
+});
