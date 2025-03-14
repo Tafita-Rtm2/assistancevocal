@@ -7,25 +7,33 @@ const chatInput = document.getElementById("chatInput");
 
 let recognition;
 let isListening = false;
+let isBotSpeaking = false;
 
 if ("webkitSpeechRecognition" in window) {
     recognition = new webkitSpeechRecognition();
     recognition.continuous = false;
     recognition.interimResults = false;
     recognition.lang = navigator.language || "fr-FR";
+    recognition.maxAlternatives = 1; // Réduction des bruits parasites
+    recognition.noiseSuppression = true; // Tentative de suppression du bruit (certains navigateurs)
+
     let silenceTimeout;
 
     recognition.onstart = () => {
-        typingIndicator.style.display = "block";
-        controlBtn.textContent = "⏹️ Arrêter";
-        isListening = true;
-        clearTimeout(silenceTimeout);
+        if (!isBotSpeaking) {
+            typingIndicator.style.display = "block";
+            controlBtn.textContent = "⏹️ Arrêter";
+            isListening = true;
+            clearTimeout(silenceTimeout);
+        }
     };
 
     recognition.onresult = async (event) => {
         typingIndicator.style.display = "none";
         const transcript = event.results[0][0].transcript;
         addMessage("Vous", transcript);
+
+        disableMic(); // Désactiver le micro pendant la réponse du bot
 
         const response = await fetch("/ask", {
             method: "POST",
@@ -34,7 +42,9 @@ if ("webkitSpeechRecognition" in window) {
         }).then(res => res.json());
 
         addMessage("Bot", response.response);
-        speak(response.response, recognition.lang);
+        await speak(response.response, recognition.lang);
+
+        enableMic(); // Réactiver le micro après la réponse du bot
     };
 
     recognition.onerror = (event) => {
@@ -48,7 +58,7 @@ if ("webkitSpeechRecognition" in window) {
     };
 
     recognition.onend = () => {
-        if (isListening) {
+        if (isListening && !isBotSpeaking) {
             setTimeout(() => recognition.start(), 1000);
         } else {
             controlBtn.textContent = "🎤 Démarrer";
@@ -97,9 +107,28 @@ function addMessage(sender, message) {
 }
 
 function speak(text, lang) {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = lang;
-    speechSynthesis.speak(utterance);
+    return new Promise((resolve) => {
+        isBotSpeaking = true;
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang;
+        utterance.onend = () => {
+            isBotSpeaking = false;
+            resolve();
+        };
+        speechSynthesis.speak(utterance);
+    });
+}
+
+function disableMic() {
+    if (recognition && isListening) {
+        recognition.stop();
+    }
+}
+
+function enableMic() {
+    if (!isBotSpeaking && isListening) {
+        recognition.start();
+    }
 }
 
 function saveChat() {
