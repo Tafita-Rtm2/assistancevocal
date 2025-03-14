@@ -1,4 +1,4 @@
-const startBtn = document.getElementById("startBtn");
+const controlBtn = document.getElementById("controlBtn");
 const typingIndicator = document.getElementById("typingIndicator");
 const toggleChat = document.getElementById("toggleChat");
 const chatBox = document.getElementById("chatBox");
@@ -6,15 +6,19 @@ const chatMessages = document.getElementById("chatMessages");
 const chatInput = document.getElementById("chatInput");
 
 let recognition;
+let isListening = false;
+
 if ("webkitSpeechRecognition" in window) {
     recognition = new webkitSpeechRecognition();
     recognition.continuous = false;
     recognition.interimResults = false;
-    recognition.lang = navigator.language || "fr-FR"; // Détection automatique de la langue
+    recognition.lang = navigator.language || "fr-FR";
     let silenceTimeout;
 
     recognition.onstart = () => {
         typingIndicator.style.display = "block";
+        controlBtn.textContent = "⏹️ Arrêter";
+        isListening = true;
         clearTimeout(silenceTimeout);
     };
 
@@ -22,17 +26,15 @@ if ("webkitSpeechRecognition" in window) {
         typingIndicator.style.display = "none";
         const transcript = event.results[0][0].transcript;
         addMessage("Vous", transcript);
-        
-        fetch("/ask", {
+
+        const response = await fetch("/ask", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ message: transcript }),
-        })
-        .then(res => res.json())
-        .then(data => {
-            addMessage("Bot", data.response);
-            speak(data.response, recognition.lang);
-        });
+        }).then(res => res.json());
+
+        addMessage("Bot", response.response);
+        speak(response.response, recognition.lang);
     };
 
     recognition.onerror = (event) => {
@@ -46,11 +48,21 @@ if ("webkitSpeechRecognition" in window) {
     };
 
     recognition.onend = () => {
-        setTimeout(() => recognition.start(), 1000);
+        if (isListening) {
+            setTimeout(() => recognition.start(), 1000);
+        } else {
+            controlBtn.textContent = "🎤 Démarrer";
+        }
     };
 
-    startBtn.addEventListener("click", () => {
-        recognition.start();
+    controlBtn.addEventListener("click", () => {
+        if (isListening) {
+            isListening = false;
+            recognition.stop();
+        } else {
+            isListening = true;
+            recognition.start();
+        }
     });
 }
 
