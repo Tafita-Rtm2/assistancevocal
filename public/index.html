@@ -4,42 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Assistant Vocal</title>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; background: #f2f2f2; }
-        #chat-container { width: 90%; max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
-        #messages { height: 300px; overflow-y: auto; text-align: left; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
-        .message { padding: 5px; margin: 5px; border-radius: 5px; }
-        .user { background: #0084ff; color: white; text-align: right; }
-        .bot { background: #ddd; }
-        #input-container { display: flex; }
-        input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
-        button { padding: 10px; background: #0084ff; color: white; border: none; cursor: pointer; }
-        #typing-indicator { font-style: italic; color: gray; display: none; }
-        #start-btn { padding: 10px 20px; background: #0084ff; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        #chat-icon { position: fixed; bottom: 20px; right: 20px; background: #0084ff; color: white; padding: 10px; border-radius: 50%; cursor: pointer; }
-        #chat-box { display: none; position: fixed; bottom: 80px; right: 20px; background: white; padding: 10px; border-radius: 10px; width: 300px; box-shadow: 0px 0px 10px #aaa; }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
     <h1>Assistant Vocal</h1>
-    <button id="start-btn">Démarrer le Mode Vocal</button>
-    
-    <div id="chat-box">
-        <div id="chat-container">
-            <h2>Chat</h2>
-            <div id="messages"></div>
-            <div id="typing-indicator">Le bot écrit...</div>
-            <div id="input-container">
-                <input type="text" id="user-input" placeholder="Écris ici...">
-                <button onclick="sendMessage()">Envoyer</button>
-            </div>
-        </div>
+    <div class="chat-container">
+        <div id="chat"></div>
+        <p id="typing-indicator" style="display: none;">✍️ Le bot écrit...</p>
+        <input type="text" id="user-input" placeholder="Écris ici..." onkeypress="handleKeyPress(event)">
+        <button onclick="sendMessage()">Envoyer</button>
     </div>
-
-    <div id="chat-icon">💬</div>
-
     <script src="script.js"></script>
-
 </body>
 </html>
