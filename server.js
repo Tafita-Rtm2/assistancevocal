@@ -8,20 +8,20 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-const API_URL = "https://renzweb.onrender.com/api/gpt-4.5-preview";
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
 
 app.post("/ask", async (req, res) => {
-    const { message } = req.body;
+  const { message } = req.body;
 
-    try {
-        const response = await axios.get(`${API_URL}?prompt=${encodeURIComponent(message)}&uid=1`);
-        const reply = response.data.reply || "Je n'ai pas compris.";
-
-        res.json({ response: reply });
-    } catch (error) {
-        console.error("Erreur API :", error);
-        res.status(500).json({ response: "Erreur avec l'IA." });
-    }
+  try {
+    const response = await axios.get(`https://renzweb.onrender.com/api/gpt-4.5-preview?prompt=${encodeURIComponent(message)}&uid=1`);
+    res.json({ response: response.data.reply });
+  } catch (error) {
+    console.error("Erreur API:", error);
+    res.status(500).json({ response: "Erreur de communication avec l'API." });
+  }
 });
 
 const PORT = process.env.PORT || 3000;
