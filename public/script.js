@@ -51,7 +51,7 @@ if ("webkitSpeechRecognition" in window) {
     recognition.onspeechend = () => {
         silenceTimeout = setTimeout(() => {
             recognition.stop();
-        }, 3000);
+        }, 1000);
     };
 
     recognition.onend = () => {
