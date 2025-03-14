@@ -1,60 +1,70 @@
-document.getElementById("start-btn").addEventListener("click", startListening);
-document.getElementById("chat-icon").addEventListener("click", () => {
-    document.getElementById("chat-box").style.display = "block";
-});
-
-let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-recognition.lang = "fr-FR";
-recognition.continuous = false;
-
-function startListening() {
-    recognition.start();
-    recognition.onresult = async (event) => {
-        let message = event.results[0][0].transcript;
-        addMessage("Moi", message);
-        getBotResponse(message);
-    };
+function addMessage(sender, message, isUser = false) {
+    const chat = document.getElementById("chat");
+    const msgDiv = document.createElement("div");
+    msgDiv.classList.add(isUser ? "user-message" : "bot-message");
+    msgDiv.innerText = sender + ": " + message;
+    chat.appendChild(msgDiv);
+    chat.scrollTop = chat.scrollHeight;
 }
 
-async function getBotResponse(question) {
+async function sendMessage() {
+    let input = document.getElementById("user-input");
+    let question = input.value.trim();
+    if (!question) return;
+
+    addMessage("Moi", question, true);
+    input.value = "";
+
     document.getElementById("typing-indicator").style.display = "block";
-    let response = await fetch("/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question })
-    });
-    let data = await response.json();
-    document.getElementById("typing-indicator").style.display = "none";
-    
-    if (data.answer) {
-        addMessage("Bot", data.answer);
-        speakText(data.answer);
-    } else {
-        addMessage("Bot", "Désolé, je n'ai pas compris.");
+
+    try {
+        let response = await fetch("/ask", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question })
+        });
+
+        let data = await response.json();
+        console.log("🟢 Réponse reçue:", data);
+
+        document.getElementById("typing-indicator").style.display = "none";
+
+        if (data.answer) {
+            addMessage("Bot", data.answer);
+            speakText(data.answer);
+        } else {
+            addMessage("Bot", "Je n'ai pas de réponse.");
+        }
+    } catch (error) {
+        console.error("❌ Erreur:", error);
+        addMessage("Bot", "Erreur de connexion.");
     }
 }
 
-function addMessage(sender, text) {
-    let messages = document.getElementById("messages");
-    let messageElement = document.createElement("div");
-    messageElement.classList.add("message", sender === "Moi" ? "user" : "bot");
-    messageElement.textContent = sender + ": " + text;
-    messages.appendChild(messageElement);
-    messages.scrollTop = messages.scrollHeight;
+function handleKeyPress(event) {
+    if (event.key === "Enter") sendMessage();
 }
 
+// 🎤 Fonction pour lire la réponse en vocal
 function speakText(text) {
-    let utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "fr-FR";
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Détection automatique de la langue
+    const detectedLang = detectLanguage(text);
+    utterance.lang = detectedLang;
+    
     speechSynthesis.speak(utterance);
 }
 
-function sendMessage() {
-    let input = document.getElementById("user-input");
-    let message = input.value;
-    if (message.trim() !== "") {
-        addMessage("Moi", message);
-        getBotResponse(message);
-        input.value = "";
-    }
+// 🌎 Détection automatique de la langue
+function detectLanguage(text) {
+    const frenchWords = ["bonjour", "salut", "merci"];
+    const englishWords = ["hello", "thank", "yes"];
+    const spanishWords = ["hola", "gracias", "sí"];
+
+    if (frenchWords.some(word => text.toLowerCase().includes(word))) return "fr-FR";
+    if (englishWords.some(word => text.toLowerCase().includes(word))) return "en-US";
+    if (spanishWords.some(word => text.toLowerCase().includes(word))) return "es-ES";
+    
+    return "fr-FR"; // Par défaut, en français
 }
