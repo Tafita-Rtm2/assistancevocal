@@ -5,17 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Assistant IA</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; background: #f4f4f4; }
-        #controlBtn { padding: 15px; font-size: 16px; border: none; border-radius: 5px; background: blue; color: white; cursor: pointer; }
-        #chatBox { display: none; position: fixed; bottom: 10px; right: 10px; width: 300px; height: 400px; background: white; border-radius: 10px; padding: 10px; box-shadow: 0px 0px 10px gray; }
-        #chatMessages { height: 80%; overflow-y: auto; text-align: left; }
+        body { font-family: Arial, sans-serif; background: black; color: lime; text-align: center; }
+        h1 { text-shadow: 0px 0px 10px lime; }
+
+        #controlBtn, #stopBtn {
+            padding: 15px; font-size: 16px; border: none; border-radius: 5px;
+            cursor: pointer; color: white; transition: 0.3s;
+        }
+        #controlBtn { background: blue; }
+        #stopBtn { background: red; position: fixed; bottom: 20px; left: 20px; }
+
+        #chatBox {
+            display: none; position: fixed; bottom: 10px; right: 10px; width: 300px;
+            height: 400px; background: rgba(0, 0, 0, 0.9); border-radius: 10px;
+            padding: 10px; box-shadow: 0px 0px 10px lime; overflow: hidden;
+        }
+        #chatMessages { height: 80%; overflow-y: auto; text-align: left; color: white; }
         #typingIndicator { display: none; font-style: italic; color: gray; }
-        #toggleChat { position: fixed; bottom: 20px; right: 20px; background: black; color: white; padding: 10px; border-radius: 50%; cursor: pointer; }
+        
+        #toggleChat {
+            position: fixed; bottom: 20px; right: 20px; background: black;
+            color: white; padding: 10px; border-radius: 50%; cursor: pointer;
+            box-shadow: 0px 0px 10px lime;
+        }
     </style>
 </head>
 <body>
     <h1>Assistant IA</h1>
     <button id="controlBtn">🎤 Démarrer</button>
+    <button id="stopBtn">⏹️ Stop</button>
     <div id="typingIndicator">⏳ L'IA réfléchit...</div>
     <button id="toggleChat">💬</button>
     
