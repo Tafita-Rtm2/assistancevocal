@@ -1,70 +1,55 @@
-const typingIndicator = document.querySelector(".typing-indicator");
-const chatContainer = document.getElementById("chatContainer");
-const chatBox = document.getElementById("chatBox");
-const textInput = document.getElementById("textInput");
-const sendTextBtn = document.getElementById("sendText");
-const toggleChatBtn = document.getElementById("toggleChat");
+document.getElementById("start-btn").addEventListener("click", startListening);
+document.getElementById("chat-icon").addEventListener("click", () => {
+    document.getElementById("chat-box").style.display = "block";
+});
 
-const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
 recognition.lang = "fr-FR";
 recognition.continuous = false;
-recognition.interimResults = false;
 
-function speakText(text) {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "fr-FR";
-    speechSynthesis.speak(utterance);
-
-    utterance.onend = () => {
-        recognition.start();
+function startListening() {
+    recognition.start();
+    recognition.onresult = async (event) => {
+        let message = event.results[0][0].transcript;
+        addMessage("Moi", message);
+        getBotResponse(message);
     };
 }
 
-function askBot(question) {
-    typingIndicator.style.display = "block";
-
-    fetch("/ask", {
+async function getBotResponse(question) {
+    document.getElementById("typing-indicator").style.display = "block";
+    let response = await fetch("/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question })
-    })
-    .then(response => response.json())
-    .then(data => {
-        typingIndicator.style.display = "none";
-        speakText(data.answer);
-        addMessage("Moi", question);
-        addMessage("Bot", data.answer);
-        saveChat("Moi", question);
-        saveChat("Bot", data.answer);
-    })
-    .catch(error => {
-        console.error("Erreur :", error);
-        typingIndicator.style.display = "none";
     });
+    let data = await response.json();
+    document.getElementById("typing-indicator").style.display = "none";
+    addMessage("Bot", data.answer);
+    speakText(data.answer);
 }
 
-function addMessage(author, message) {
-    const messageElement = document.createElement("p");
-    messageElement.textContent = `${author}: ${message}`;
-    chatBox.appendChild(messageElement);
-    chatBox.scrollTop = chatBox.scrollHeight;
+function addMessage(sender, text) {
+    let messages = document.getElementById("messages");
+    let messageElement = document.createElement("div");
+    messageElement.classList.add("message", sender === "Moi" ? "user" : "bot");
+    messageElement.textContent = sender + ": " + text;
+    messages.appendChild(messageElement);
+    messages.scrollTop = messages.scrollHeight;
 }
 
-recognition.onresult = (event) => {
-    let question = event.results[0][0].transcript;
-    askBot(question);
-};
+function speakText(text) {
+    let utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "fr-FR";
+    speechSynthesis.speak(utterance);
+}
 
-recognition.start();
-
-sendTextBtn.addEventListener("click", () => {
-    let question = textInput.value.trim();
-    if (question) {
-        askBot(question);
-        textInput.value = "";
+function sendMessage() {
+    let input = document.getElementById("user-input");
+    let message = input.value;
+    if (message.trim() !== "") {
+        addMessage("Moi", message);
+        getBotResponse(message);
+        input.value = "";
     }
-});
-
-toggleChatBtn.addEventListener("click", () => {
-    chatContainer.style.display = chatContainer.style.display === "none" ? "block" : "none";
-});
+}
