@@ -1,31 +1,28 @@
-const express = require('express');
-const axios = require('axios');
-const cors = require('cors');
+const express = require("express");
+const cors = require("cors");
+const axios = require("axios");
+const path = require("path");
 
 const app = express();
-const PORT = 3000;
-
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, "public")));
 
-app.post('/ask', async (req, res) => {
-    try {
-        const userMessage = req.body.message;
-        const apiUrl = `http://sgp1.hmvhostings.com:25721/gemini?question=${encodeURIComponent(userMessage)}`;
-        const response = await axios.get(apiUrl);
-
-        if (response.data && response.data.answer) {
-            res.json({ reply: response.data.answer });
-        } else {
-            res.json({ reply: "Désolé, je n'ai pas compris." });
-        }
-    } catch (error) {
-        console.error("Erreur API:", error);
-        res.status(500).json({ reply: "Erreur de connexion avec le serveur." });
-    }
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-app.listen(PORT, () => {
-    console.log(`Serveur démarré sur http://localhost:${PORT}`);
+app.post("/ask", async (req, res) => {
+  const { message } = req.body;
+
+  try {
+    const response = await axios.get(`https://kaiz-apis.gleeze.com/api/gpt-4o-pro?ask=${encodeURIComponent(message)}&uid=1`);
+    res.json({ response: response.data.response });
+  } catch (error) {
+    console.error("Erreur API:", error);
+    res.status(500).json({ response: "Erreur de communication avec l'API." });
+  }
 });
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Serveur sur http://localhost:${PORT}`));
