@@ -1,4 +1,5 @@
 const controlBtn = document.getElementById("controlBtn");
+const stopBtn = document.getElementById("stopBtn");
 const typingIndicator = document.getElementById("typingIndicator");
 const toggleChat = document.getElementById("toggleChat");
 const chatBox = document.getElementById("chatBox");
@@ -8,6 +9,7 @@ const chatInput = document.getElementById("chatInput");
 let recognition;
 let isListening = false;
 let isBotSpeaking = false;
+let isStopped = false;
 
 if ("webkitSpeechRecognition" in window) {
     recognition = new webkitSpeechRecognition();
@@ -32,7 +34,7 @@ if ("webkitSpeechRecognition" in window) {
         const transcript = event.results[0][0].transcript;
         addMessage("Vous", transcript);
 
-        disableMic(); // Désactiver le micro pour éviter que le bot ne se réponde à lui-même
+        disableMic();
 
         const response = await fetch("/ask", {
             method: "POST",
@@ -43,22 +45,18 @@ if ("webkitSpeechRecognition" in window) {
         addMessage("Bot", response.response);
         await speak(response.response, recognition.lang);
 
-        enableMic(); // Réactiver le micro après la réponse du bot
-    };
-
-    recognition.onerror = (event) => {
-        console.error("Erreur:", event.error);
+        enableMic();
     };
 
     recognition.onspeechend = () => {
         silenceTimeout = setTimeout(() => {
-            recognition.stop();  // Arrête après 3 secondes de silence
+            recognition.stop();
         }, 3000);
     };
 
     recognition.onend = () => {
-        if (isListening && !isBotSpeaking) {
-            setTimeout(() => recognition.start(), 100); // Démarrage ultra rapide
+        if (isListening && !isBotSpeaking && !isStopped) {
+            setTimeout(() => recognition.start(), 100);
         } else {
             controlBtn.textContent = "🎤 Démarrer";
         }
@@ -74,6 +72,17 @@ if ("webkitSpeechRecognition" in window) {
         }
     });
 }
+
+stopBtn.addEventListener("click", () => {
+    isStopped = !isStopped;
+    if (isStopped) {
+        recognition.stop();
+        stopBtn.textContent = "▶️ Reprendre";
+    } else {
+        recognition.start();
+        stopBtn.textContent = "⏹️ Stop";
+    }
+});
 
 toggleChat.addEventListener("click", () => {
     chatBox.style.display = chatBox.style.display === "none" ? "block" : "none";
@@ -119,13 +128,11 @@ function speak(text, lang) {
 }
 
 function disableMic() {
-    if (recognition && isListening) {
-        recognition.stop();
-    }
+    recognition.stop();
 }
 
 function enableMic() {
-    if (!isBotSpeaking && isListening) {
+    if (!isBotSpeaking && isListening && !isStopped) {
         recognition.start();
     }
 }
