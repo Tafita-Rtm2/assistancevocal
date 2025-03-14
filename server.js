@@ -16,8 +16,8 @@ app.post("/ask", async (req, res) => {
   const { message } = req.body;
 
   try {
-    const response = await axios.get(`https://kaiz-apis.gleeze.com/api/gpt-4o-pro?ask=${encodeURIComponent(message)}&uid=1`);
-    res.json({ response: response.data.response });
+    const response = await axios.get(`https://renzweb.onrender.com/api/gpt-4.5-preview?prompt=${encodeURIComponent(message)}&uid=1`);
+    res.json({ response: response.data.reply });
   } catch (error) {
     console.error("Erreur API:", error);
     res.status(500).json({ response: "Erreur de communication avec l'API." });
