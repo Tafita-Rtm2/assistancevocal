@@ -117,10 +117,12 @@ function addMessage(sender, message) {
 function speak(text, lang) {
     return new Promise((resolve) => {
         isBotSpeaking = true;
+        disableMic();
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = lang;
         utterance.onend = () => {
             isBotSpeaking = false;
+            enableMic();
             resolve();
         };
         speechSynthesis.speak(utterance);
