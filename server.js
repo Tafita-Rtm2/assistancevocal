@@ -12,8 +12,12 @@ app.post("/ask", async (req, res) => {
     try {
         const response = await fetch(`http://sgp1.hmvhostings.com:25721/gemini?question=${encodeURIComponent(question)}`);
         const data = await response.json();
-        const reply = data.answer || "Je ne sais pas quoi dire.";
-        res.json({ answer: reply });
+        
+        if (data.answer) {
+            res.json({ answer: data.answer });
+        } else {
+            res.json({ answer: "Désolé, je n'ai pas compris votre question." });
+        }
     } catch (error) {
         res.json({ answer: "Erreur de connexion à l'API." });
     }
