@@ -8,20 +8,23 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
+const GEMINI_API_KEY = "AIzaSyBrLBVavqMAb5HweYh_slRTwL11bdUbz8w"; // Remplace par ta clé API
 
 app.post("/ask", async (req, res) => {
-  const { message } = req.body;
+    const { message } = req.body;
 
-  try {
-    const response = await axios.get(`https://renzweb.onrender.com/api/gpt-4.5-preview?prompt=${encodeURIComponent(message)}&uid=1`);
-    res.json({ response: response.data.reply });
-  } catch (error) {
-    console.error("Erreur API:", error);
-    res.status(500).json({ response: "Erreur de communication avec l'API." });
-  }
+    try {
+        const response = await axios.post(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateText?key=${GEMINI_API_KEY}`,
+            { prompt: { text: message } }
+        );
+
+        const reply = response.data.candidates[0]?.output || "Je n'ai pas compris.";
+        res.json({ response: reply });
+    } catch (error) {
+        console.error("Erreur API Gemini:", error);
+        res.status(500).json({ response: "Erreur avec l'IA." });
+    }
 });
 
 const PORT = process.env.PORT || 3000;
